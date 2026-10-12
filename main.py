@@ -41,6 +41,11 @@ class UsuarioCrear(BaseModel):
     cvv: str
     nip: str
 
+# Definimos un modelo de datos para el login de usuarios, que será usado para validar los datos que el frontend envíe al backend
+class UsuarioLogin(BaseModel):
+    correoElectronico: str
+    contrasenia: str
+
 @app.post("/usuarios/crear") # Cuando el frontend haga una petición POST a la ruta /usuarios/crear, se ejecutará la función crear_usuario()
 def crear_usuario(usuario: UsuarioCrear):
     conexion = obtener_conexion()
@@ -123,6 +128,46 @@ def obtener_usuarios(rol_solicitante: str):
         raise HTTPException(status_code=500, detail=f"Error al consultar: {err}")
     finally:
         if conexion.is_connected(): 
+            cursor.close()
+            conexion.close()
+
+@app.post("/login") # Cuando el frontend haga una petición POST a la ruta /login, se ejecutará la función iniciar_sesion()
+def iniciar_sesion(credenciales: UsuarioLogin):
+    conexion = obtener_conexion()
+    if not conexion:
+        raise HTTPException(status_code=500, detail="Error de conexión a la BD")
+    
+    try:
+        cursor = conexion.cursor(dictionary=True)
+        
+        # Comparamos el correo y la contraseña encriptada con SHA2
+        sql = """
+            SELECT id, nombre, rol 
+            FROM usuarios 
+            WHERE correoElectronico = %s AND contrasenia = SHA2(%s, 256)
+        """
+        
+        valores = (credenciales.correoElectronico, credenciales.contrasenia)
+        cursor.execute(sql, valores)
+        
+        # Devuelve un diccionario con los datos del usuario si las credenciales son correctas
+        usuario = cursor.fetchone() 
+        
+        if usuario:
+            # Si encontró un usuario con esas credenciales, devolvemos un mensaje de éxito y los datos del usuario al frontend
+            return {
+                "status": "success", 
+                "mensaje": "Bienvenido a Mesa Verde", 
+                "datos": usuario 
+            }
+        else:
+            # Si no encontró nada, lanzamos un Error 401 (Unauthorized)
+            raise HTTPException(status_code=401, detail="Correo o contraseña incorrectos")
+            
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Error en el servidor: {err}")
+    finally:
+        if conexion.is_connected():
             cursor.close()
             conexion.close()
 
