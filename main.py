@@ -87,6 +87,45 @@ def crear_usuario(usuario: UsuarioCrear):
             cursor.close()
             conexion.close()
 
+@app.get("/usuarios") # Cuando el frontend haga una petición GET a la ruta /usuarios, se ejecutará la función obtener_usuarios()
+def obtener_usuarios(rol_solicitante: str):
+    conexion = obtener_conexion()
+    if not conexion:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    try:
+        cursor = conexion.cursor(dictionary=True) # dictionary es un parámetro que hace que el cursor devuelva los resultados como diccionarios en lugar de tuplas. Esto facilita el acceso a los datos por nombre de columna.
+
+        # Usamos AES_DECRYPT con la misma llave y casteamos a CHAR porque AES_DECRYPT devuelve datos binarios
+        sql = """
+            SELECT 
+                id, nombre, apellidoPaterno, apellidoMaterno, rol, correoElectronico, 
+                telefono, fechaNacimiento, direccion, rfc, estatus,
+                CAST(AES_DECRYPT(numeroCuenta, 'MesaVerdeSecretKey') AS CHAR) as numeroCuenta,
+                CAST(AES_DECRYPT(cvv, 'MesaVerdeSecretKey') AS CHAR) as cvv,
+                CAST(AES_DECRYPT(nip, 'MesaVerdeSecretKey') AS CHAR) as nip
+            FROM usuarios
+        """
+        
+        cursor.execute(sql)
+        usuarios = cursor.fetchall() # devuelve todos los resultados de la consulta como una lista de diccionarios, donde cada diccionario representa un usuario.
+        
+        # Si el rol del solicitante es "empleado", ocultamos los datos sensibles de los usuarios antes de enviarlos al frontend
+        if rol_solicitante == "empleado":
+            for usuario in usuarios:
+                usuario["numeroCuenta"] = "PROTEGIDO"
+                usuario["cvv"] = "***"
+                usuario["nip"] = "****"
+                
+        return {"status": "success", "data": usuarios} # Retorna JSON con los datos de los usuarios al frontend
+        
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Error al consultar: {err}")
+    finally:
+        if conexion.is_connected(): 
+            cursor.close()
+            conexion.close()
+
 @app.get("/test-db") # Cuando el frontend haga una petición GET a la ruta /test-db, se ejecutará la función probar_conexion()
 def probar_conexion():
     conexion = obtener_conexion()
