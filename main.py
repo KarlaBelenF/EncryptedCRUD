@@ -4,11 +4,22 @@ from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from datetime import date
+from fastapi.middleware.cors import CORSMiddleware
 
 # Lee mi archivo .env y carga las variables en memoria
 load_dotenv()
 
 app = FastAPI() #Crea un servidor web que escucha peticiones HTTP y devuelve respuestas HTTP.
+
+# Le decimos a la API que acepte peticiones desde cualquier lugar porque el frontend y el backend están en servidores diferentes, y los navegadores bloquean las peticiones entre dominios por seguridad
+# CORS (Cross-Origin Resource Sharing) es un mecanismo que permite a los servidores indicar que permiten peticiones desde otros dominios
+app.add_middleware( # Un middleware es un código que se ejecuta antes de que la petición llegue a la función que la maneja, y puede modificar la petición o la respuesta
+    CORSMiddleware, 
+    allow_origins=["*"],  # Permitir desde cualquier dirección
+    allow_credentials=True, # Permitir que se envíen cookies y cabeceras de autenticación
+    allow_methods=["*"],  # Permitir todos los métodos (GET, POST, PUT, DELETE)
+    allow_headers=["*"],  # Permitir que nos manden datos en cualquier formato (JSON)
+)
  
 # Nos conectamos a la base de datos usando las variables de entorno que cargamos desde el archivo .env
 def obtener_conexion():
@@ -62,7 +73,10 @@ class UsuarioActualizar(BaseModel):
     estatus: bool
 
 @app.post("/usuarios/crear") # Cuando el frontend haga una petición POST a la ruta /usuarios/crear, se ejecutará la función crear_usuario()
-def crear_usuario(usuario: UsuarioCrear):
+def crear_usuario(usuario: UsuarioCrear, rol_solicitante: str):
+    if rol_solicitante != "administrador":
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden crear usuarios")
+    
     conexion = obtener_conexion()
     if not conexion:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
@@ -187,7 +201,10 @@ def iniciar_sesion(credenciales: UsuarioLogin):
             conexion.close()
 
 @app.put("/usuarios/{id_usuario}") # Cuando el frontend haga una petición PUT a la ruta /usuarios/{id_usuario}, se ejecutará la función modificar_usuario()
-def modificar_usuario(id_usuario: int, datos: UsuarioActualizar):
+def modificar_usuario(id_usuario: int, datos: UsuarioActualizar, rol_solicitante: str):
+    if rol_solicitante != "administrador":
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden modificar usuarios")
+    
     conexion = obtener_conexion()
     if not conexion:
         raise HTTPException(status_code=500, detail="Error de conexión a la BD")
@@ -240,7 +257,10 @@ def modificar_usuario(id_usuario: int, datos: UsuarioActualizar):
             conexion.close()
 
 @app.delete("/usuarios/{id_usuario}") # Cuando el frontend haga una petición DELETE a la ruta /usuarios/{id_usuario}, se ejecutará la función eliminar_usuario()
-def eliminar_usuario(id_usuario: int):
+def eliminar_usuario(id_usuario: int, rol_solicitante: str):
+    if rol_solicitante != "administrador":
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden eliminar usuarios")
+    
     conexion = obtener_conexion()
     if not conexion:
         raise HTTPException(status_code=500, detail="Error de conexión a la BD")
