@@ -1,13 +1,8 @@
-import os
-import mysql.connector
 from fastapi import FastAPI, HTTPException
-from dotenv import load_dotenv
-from pydantic import BaseModel
-from datetime import date
 from fastapi.middleware.cors import CORSMiddleware
-
-# Lee mi archivo .env y carga las variables en memoria
-load_dotenv()
+import mysql.connector
+from database import obtener_conexion
+from models import UsuarioCrear, UsuarioActualizar, UsuarioLogin
 
 app = FastAPI() #Crea un servidor web que escucha peticiones HTTP y devuelve respuestas HTTP.
 
@@ -20,57 +15,7 @@ app.add_middleware( # Un middleware es un código que se ejecuta antes de que la
     allow_methods=["*"],  # Permitir todos los métodos (GET, POST, PUT, DELETE)
     allow_headers=["*"],  # Permitir que nos manden datos en cualquier formato (JSON)
 )
- 
-# Nos conectamos a la base de datos usando las variables de entorno que cargamos desde el archivo .env
-def obtener_conexion():
-    try:
-        conexion = mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME")
-        )
-        return conexion
-    except mysql.connector.Error as err: #Si hay un error al conectar, lo imprime en consola y devuelve None
-        print(f"Error al conectar: {err}")
-        return None
 
-# Definimos un modelo de datos para la creación de usuarios, que será usado para validar los datos que el frontend envíe al backend
-# No pedimos id porque la base de datos lo genera automáticamente ni estado porque por default es true
-class UsuarioCrear(BaseModel):
-    nombre: str
-    apellidoPaterno: str
-    apellidoMaterno: str
-    rol: str
-    correoElectronico: str
-    telefono: str
-    fechaNacimiento: date
-    direccion: str
-    rfc: str
-    contrasenia: str
-    numeroCuenta: str
-    cvv: str
-    nip: str
-
-class UsuarioLogin(BaseModel):
-    correoElectronico: str
-    contrasenia: str
-
-class UsuarioActualizar(BaseModel):
-    nombre: str
-    apellidoPaterno: str
-    apellidoMaterno: str
-    rol: str
-    correoElectronico: str
-    telefono: str
-    fechaNacimiento: date
-    direccion: str
-    rfc: str
-    contrasenia: str
-    numeroCuenta: str
-    cvv: str
-    nip: str
-    estatus: bool
 
 @app.post("/usuarios/crear") # Cuando el frontend haga una petición POST a la ruta /usuarios/crear, se ejecutará la función crear_usuario()
 def crear_usuario(usuario: UsuarioCrear, rol_solicitante: str):
