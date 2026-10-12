@@ -41,10 +41,25 @@ class UsuarioCrear(BaseModel):
     cvv: str
     nip: str
 
-# Definimos un modelo de datos para el login de usuarios, que será usado para validar los datos que el frontend envíe al backend
 class UsuarioLogin(BaseModel):
     correoElectronico: str
     contrasenia: str
+
+class UsuarioActualizar(BaseModel):
+    nombre: str
+    apellidoPaterno: str
+    apellidoMaterno: str
+    rol: str
+    correoElectronico: str
+    telefono: str
+    fechaNacimiento: date
+    direccion: str
+    rfc: str
+    contrasenia: str
+    numeroCuenta: str
+    cvv: str
+    nip: str
+    estatus: bool
 
 @app.post("/usuarios/crear") # Cuando el frontend haga una petición POST a la ruta /usuarios/crear, se ejecutará la función crear_usuario()
 def crear_usuario(usuario: UsuarioCrear):
@@ -166,6 +181,84 @@ def iniciar_sesion(credenciales: UsuarioLogin):
             
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=f"Error en el servidor: {err}")
+    finally:
+        if conexion.is_connected():
+            cursor.close()
+            conexion.close()
+
+@app.put("/usuarios/{id_usuario}") # Cuando el frontend haga una petición PUT a la ruta /usuarios/{id_usuario}, se ejecutará la función modificar_usuario()
+def modificar_usuario(id_usuario: int, datos: UsuarioActualizar):
+    conexion = obtener_conexion()
+    if not conexion:
+        raise HTTPException(status_code=500, detail="Error de conexión a la BD")
+    
+    try:
+        cursor = conexion.cursor()
+        
+        # Usamos SHA2 y AES_ENCRYPT para encriptar la contraseña, el número de cuenta, el CVV y el NIP antes de guardarlos en la base de datos
+        sql = """
+            UPDATE usuarios 
+            SET nombre = %s, 
+                apellidoPaterno = %s, 
+                apellidoMaterno = %s, 
+                rol = %s, 
+                correoElectronico = %s, 
+                telefono = %s, 
+                fechaNacimiento = %s, 
+                direccion = %s, 
+                rfc = %s, 
+                estatus = %s,
+                contrasenia = SHA2(%s, 256),
+                numeroCuenta = AES_ENCRYPT(%s, 'MesaVerdeSecretKey'),
+                cvv = AES_ENCRYPT(%s, 'MesaVerdeSecretKey'),
+                nip = AES_ENCRYPT(%s, 'MesaVerdeSecretKey')
+            WHERE id = %s
+        """
+        
+        
+        valores = ( 
+            datos.nombre, datos.apellidoPaterno, datos.apellidoMaterno, datos.rol,
+            datos.correoElectronico, datos.telefono, datos.fechaNacimiento,
+            datos.direccion, datos.rfc, datos.estatus,
+            datos.contrasenia, datos.numeroCuenta, datos.cvv, datos.nip,
+            id_usuario
+        )
+        
+        cursor.execute(sql, valores)
+        conexion.commit()
+        
+        if cursor.rowcount == 0: # Si no se modificó ningún registro, significa que el usuario con ese id no existe
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+            
+        return {"status": "success", "mensaje": "Los datos del usuario fueron actualizados"}
+        
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Error al modificar: {err}")
+    finally:
+        if conexion.is_connected():
+            cursor.close()
+            conexion.close()
+
+@app.delete("/usuarios/{id_usuario}") # Cuando el frontend haga una petición DELETE a la ruta /usuarios/{id_usuario}, se ejecutará la función eliminar_usuario()
+def eliminar_usuario(id_usuario: int):
+    conexion = obtener_conexion()
+    if not conexion:
+        raise HTTPException(status_code=500, detail="Error de conexión a la BD")
+    
+    try:
+        cursor = conexion.cursor()
+        
+        sql = "DELETE FROM usuarios WHERE id = %s"
+        cursor.execute(sql, (id_usuario,)) #Hay una coma después de id_usuario para que Python lo interprete como una tupla de un solo elemento
+        conexion.commit()
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+            
+        return {"status": "success", "mensaje": "Usuario eliminado del sistema"}
+        
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Error al eliminar: {err}")
     finally:
         if conexion.is_connected():
             cursor.close()
