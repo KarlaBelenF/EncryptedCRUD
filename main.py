@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import mysql.connector
 from database import obtener_conexion
 from models import UsuarioCrear, UsuarioActualizar, UsuarioLogin
+import os
+
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 app = FastAPI() #Crea un servidor web que escucha peticiones HTTP y devuelve respuestas HTTP.
 
@@ -38,9 +41,9 @@ def crear_usuario(usuario: UsuarioCrear, rol_solicitante: str):
                 %s, %s, %s, %s, %s, %s, 
                 %s, %s, %s, 
                 SHA2(%s, 256), 
-                AES_ENCRYPT(%s, 'MesaVerdeSecretKey'), 
-                AES_ENCRYPT(%s, 'MesaVerdeSecretKey'), 
-                AES_ENCRYPT(%s, 'MesaVerdeSecretKey')
+                AES_ENCRYPT(%s, '%s'), 
+                AES_ENCRYPT(%s, '%s'), 
+                AES_ENCRYPT(%s, '%s')
             )
         """
         
@@ -49,9 +52,9 @@ def crear_usuario(usuario: UsuarioCrear, rol_solicitante: str):
             usuario.correoElectronico, usuario.telefono, usuario.fechaNacimiento, 
             usuario.direccion, usuario.rfc, 
             usuario.contrasenia, # Se irá al %s de SHA2
-            usuario.numeroCuenta, # Se irá al %s de AES_ENCRYPT
-            usuario.cvv,          # Se irá al %s de AES_ENCRYPT
-            usuario.nip     # Se irá al %s de AES_ENCRYPT
+            usuario.numeroCuenta, SECRET_KEY, # Se irá al %s de AES_ENCRYPT
+            usuario.cvv, SECRET_KEY,          # Se irá al %s de AES_ENCRYPT
+            usuario.nip, SECRET_KEY     # Se irá al %s de AES_ENCRYPT
         )
         
         cursor.execute(sql, valores) # Mandamos la sentencia SQL y los valores separados por seguridad, para evitar inyecciones SQL.
@@ -83,13 +86,13 @@ def obtener_usuarios(rol_solicitante: str):
             SELECT 
                 id, nombre, apellidoPaterno, apellidoMaterno, rol, correoElectronico, 
                 telefono, fechaNacimiento, direccion, rfc, estatus,
-                CAST(AES_DECRYPT(numeroCuenta, 'MesaVerdeSecretKey') AS CHAR) as numeroCuenta,
-                CAST(AES_DECRYPT(cvv, 'MesaVerdeSecretKey') AS CHAR) as cvv,
-                CAST(AES_DECRYPT(nip, 'MesaVerdeSecretKey') AS CHAR) as nip
+                CAST(AES_DECRYPT(numeroCuenta, %s) AS CHAR) as numeroCuenta,
+                CAST(AES_DECRYPT(cvv, %s) AS CHAR) as cvv,
+                CAST(AES_DECRYPT(nip, %s) AS CHAR) as nip
             FROM usuarios
         """
         
-        cursor.execute(sql)
+        cursor.execute(sql, (SECRET_KEY, SECRET_KEY, SECRET_KEY)) # Mandamos la llave de encriptación como parámetro para que MySQL pueda desencriptar los datos correctamente
         usuarios = cursor.fetchall() # devuelve todos los resultados de la consulta como una lista de diccionarios, donde cada diccionario representa un usuario.
         
         # Si el rol del solicitante es "empleado", ocultamos los datos sensibles de los usuarios antes de enviarlos al frontend
@@ -122,13 +125,13 @@ def obtener_usuario_por_id(id_usuario: int, rol_solicitante: str):
         sql = """
             SELECT id, nombre, apellidoPaterno, apellidoMaterno, rol, correoElectronico, 
             telefono, fechaNacimiento, direccion, rfc, estatus,
-            CAST(AES_DECRYPT(numeroCuenta, 'MesaVerdeSecretKey') AS CHAR) as numeroCuenta,
-            CAST(AES_DECRYPT(cvv, 'MesaVerdeSecretKey') AS CHAR) as cvv,
-            CAST(AES_DECRYPT(nip, 'MesaVerdeSecretKey') AS CHAR) as nip
+            CAST(AES_DECRYPT(numeroCuenta, %s) AS CHAR) as numeroCuenta,
+            CAST(AES_DECRYPT(cvv, %s) AS CHAR) as cvv,
+            CAST(AES_DECRYPT(nip, %s) AS CHAR) as nip
             FROM usuarios
             WHERE id = %s
         """
-        cursor.execute(sql, (id_usuario,))
+        cursor.execute(sql, (SECRET_KEY, SECRET_KEY, SECRET_KEY, id_usuario))
         usuario = cursor.fetchone()
         
         if not usuario:
@@ -210,9 +213,9 @@ def modificar_usuario(id_usuario: int, datos: UsuarioActualizar, rol_solicitante
                 rfc = %s, 
                 estatus = %s,
                 contrasenia = SHA2(%s, 256),
-                numeroCuenta = AES_ENCRYPT(%s, 'MesaVerdeSecretKey'),
-                cvv = AES_ENCRYPT(%s, 'MesaVerdeSecretKey'),
-                nip = AES_ENCRYPT(%s, 'MesaVerdeSecretKey')
+                numeroCuenta = AES_ENCRYPT(%s, %s),
+                cvv = AES_ENCRYPT(%s, %s),
+                nip = AES_ENCRYPT(%s, %s)
             WHERE id = %s
         """
         
@@ -221,7 +224,7 @@ def modificar_usuario(id_usuario: int, datos: UsuarioActualizar, rol_solicitante
             datos.nombre, datos.apellidoPaterno, datos.apellidoMaterno, datos.rol,
             datos.correoElectronico, datos.telefono, datos.fechaNacimiento,
             datos.direccion, datos.rfc, datos.estatus,
-            datos.contrasenia, datos.numeroCuenta, datos.cvv, datos.nip,
+            datos.contrasenia, datos.numeroCuenta, SECRET_KEY, datos.cvv, SECRET_KEY, datos.nip, SECRET_KEY,
             id_usuario
         )
         
