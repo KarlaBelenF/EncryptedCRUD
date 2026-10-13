@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesa Verde - Panel de Usuarios</title>
+    <link rel="stylesheet" href="usuarios.css">
+</head>
+<body>
+
+    <header class="barra-superior">
+        <div class="logo-contenedor">
+            <img src="images/Mesa_verde.png" alt="Logo Mesa Verde" class="logo-barra">
+            <span class="texto-logo">Mesa Verde</span>
+        </div>
+        <nav class="navegacion-principal">
+            <a href="#" class="activo">Usuarios</a>
+            <a href="#" class="boton-salir" id="btn-salir">Salir</a>
+        </nav>
+    </header>
+
+    <main class="area-trabajo">
+        <div class="encabezado-tabla">
+            <h1>Reporte de Usuarios</h1>
+            <button class="boton-agregar">+ Nuevo Usuario</button>
+        </div>
+
+        <div class="envoltorio-tabla">
+            <table class="cuadricula-usuarios">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Apellidos</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Teléfono</th>
+                        <th>Dirección</th>
+                        <th>Fecha Nac.</th>
+                        <th>RFC</th>
+                        <th>CURP</th>
+                        <th>Departamento</th>
+                        <th>CVV (Encriptado)</th>
+                        <th>Cuenta (Encriptada)</th>
+                        <th>NIP (Encriptado)</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-usuarios-body">
+                    <!-- Los datos se inyectarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+    <script src="tabla_usuarios.js"></script>
+
+</body>
+</html>
