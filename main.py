@@ -83,18 +83,30 @@ def obtener_usuarios(rol_solicitante: str):
     try:
         cursor = conexion.cursor(dictionary=True) # dictionary es un parámetro que hace que el cursor devuelva los resultados como diccionarios en lugar de tuplas. Esto facilita el acceso a los datos por nombre de columna.
 
-        # HEX muestra la representación hexadecimal de los datos cifrados almacenados.
-        sql = """
-            SELECT 
-                id, nombre, apellidoPaterno, apellidoMaterno, rol, correoElectronico, 
-                telefono, fechaNacimiento, direccion, rfc, estatus,
-                HEX(numeroCuenta) as numeroCuenta,
-                HEX(cvv) as cvv,
-                HEX(nip) as nip
-            FROM usuarios
-        """
-        
-        cursor.execute(sql)
+        if rol_solicitante.strip().lower() == "administrador":
+            sql = """
+                SELECT
+                    id, nombre, apellidoPaterno, apellidoMaterno, rol, correoElectronico,
+                    telefono, fechaNacimiento, direccion, rfc, estatus,
+                    CAST(AES_DECRYPT(numeroCuenta, %s) AS CHAR) as numeroCuenta,
+                    CAST(AES_DECRYPT(cvv, %s) AS CHAR) as cvv,
+                    CAST(AES_DECRYPT(nip, %s) AS CHAR) as nip
+                FROM usuarios
+            """
+            cursor.execute(sql, (SECRET_KEY, SECRET_KEY, SECRET_KEY))
+        else:
+            # HEX devuelve los bytes cifrados sin revelar el valor original.
+            sql = """
+                SELECT
+                    id, nombre, apellidoPaterno, apellidoMaterno, rol, correoElectronico,
+                    telefono, fechaNacimiento, direccion, rfc, estatus,
+                    HEX(numeroCuenta) as numeroCuenta,
+                    HEX(cvv) as cvv,
+                    HEX(nip) as nip
+                FROM usuarios
+            """
+            cursor.execute(sql)
+
         usuarios = cursor.fetchall() # devuelve todos los resultados de la consulta como una lista de diccionarios, donde cada diccionario representa un usuario.
                 
         return {"status": "success", "data": usuarios} # Retorna JSON con los datos de los usuarios al frontend

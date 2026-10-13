@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     cargarUsuarios();
     configurarBotonSalir();
+    configurarVistaPorRol();
 });
 
 let usuarioEditandoId = null;
@@ -8,6 +9,12 @@ let estatusUsuarioEditando = true;
 
 function obtenerRolSolicitante() {
     return (localStorage.getItem("rolActivo") || "empleado").toLowerCase();
+}
+
+function configurarVistaPorRol() {
+    const esAdministrador = obtenerRolSolicitante() === "administrador";
+    document.getElementById("btn-abrir-modal").hidden = !esAdministrador;
+    document.getElementById("encabezado-acciones").hidden = !esAdministrador;
 }
 
 // Función para el botón de Salir
@@ -24,7 +31,7 @@ function configurarBotonSalir() {
 
 async function cargarUsuarios() {
     try {
-        const rolUsuario = localStorage.getItem("rolActivo") || "empleado";
+        const rolUsuario = obtenerRolSolicitante();
         const respuesta = await fetch(`http://localhost:8000/usuarios?rol_solicitante=${rolUsuario}`);
         
         if (!respuesta.ok) {
@@ -70,10 +77,10 @@ function renderizarTabla(usuarios) {
             <td>${usuario.numeroCuenta}</td>
             <td>${usuario.nip}</td>
             <td class="celda-acciones">
-                ${esAdministrador ? `<button class="btn-icono btn-editar" title="Editar" onclick="editarUsuario(${usuario.id})">✏️</button>` : ""}
-                <button class="btn-icono btn-eliminar" title="Eliminar" onclick="eliminarUsuario(${usuario.id})">
-                    🗑️
-                </button>
+                ${esAdministrador ? `
+                    <button class="btn-icono btn-editar" title="Editar" onclick="editarUsuario(${usuario.id})">✏️</button>
+                    <button class="btn-icono btn-eliminar" title="Eliminar" onclick="eliminarUsuario(${usuario.id})">🗑️</button>
+                ` : ""}
             </td>
         `;
         tbody.appendChild(tr);
@@ -150,7 +157,6 @@ window.eliminarUsuario = async function(id) {
 
 // ==========================================
 // CREACIÓN DE USUARIO
-// ==========================================
 
 document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("modal-nuevo-usuario");
@@ -221,9 +227,14 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const resultado = await respuesta.json();
-
             if (!respuesta.ok) {
-                throw new Error(resultado.detail || "No se pudo guardar el usuario.");
+                const detalle = resultado.detail;
+                const mensajeError = typeof detalle === "string"
+                    ? detalle
+                    : detalle
+                        ? JSON.stringify(detalle)
+                        : "No se pudo guardar el usuario.";
+                throw new Error(mensajeError);
             }
 
             alert(resultado.mensaje);
