@@ -39,8 +39,6 @@
                         <th>Dirección</th>
                         <th>Fecha Nac.</th>
                         <th>RFC</th>
-                        <th>CURP</th>
-                        <th>Departamento</th>
                         <th>CVV (Encriptado)</th>
                         <th>Cuenta (Encriptada)</th>
                         <th>NIP (Encriptado)</th>
@@ -58,7 +56,7 @@
     <div id="modal-nuevo-usuario" class="modal-oculto">
         <div class="modal-contenido">
             <div class="modal-cabecera">
-                <h2>Crear Nuevo Usuario</h2>
+                <h2 id="titulo-modal-usuario">Crear Nuevo Usuario</h2>
                 <span class="cerrar-modal" id="btn-cerrar-modal">&times;</span>
             </div>
             
@@ -88,7 +86,7 @@
                         <input type="email" id="crear-correo" required>
                     </div>
                     <div class="campo">
-                        <label>Contraseña:</label>
+                        <label>Contraseña (opcional al editar):</label>
                         <input type="password" id="crear-password" required>
                     </div>
                     <div class="campo">
@@ -123,7 +121,7 @@
 
                 <div class="modal-acciones">
                     <button type="button" class="btn-cancelar" id="btn-cancelar-modal">Cancelar</button>
-                    <button type="submit" class="btn-guardar">Guardar Usuario</button>
+                    <button type="submit" class="btn-guardar" id="btn-guardar">Guardar Usuario</button>
                 </div>
             </form>
         </div>

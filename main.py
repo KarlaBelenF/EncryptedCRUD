@@ -43,9 +43,9 @@ def crear_usuario(usuario: UsuarioCrear, rol_solicitante: str):
                 %s, %s, %s, %s, %s, %s, 
                 %s, %s, %s, 
                 SHA2(%s, 256), 
-                AES_ENCRYPT(%s, '%s'), 
-                AES_ENCRYPT(%s, '%s'), 
-                AES_ENCRYPT(%s, '%s')
+                AES_ENCRYPT(%s, %s),
+                AES_ENCRYPT(%s, %s),
+                AES_ENCRYPT(%s, %s)
             )
         """
         
@@ -83,26 +83,19 @@ def obtener_usuarios(rol_solicitante: str):
     try:
         cursor = conexion.cursor(dictionary=True) # dictionary es un parámetro que hace que el cursor devuelva los resultados como diccionarios en lugar de tuplas. Esto facilita el acceso a los datos por nombre de columna.
 
-        # Usamos AES_DECRYPT con la misma llave y casteamos a CHAR porque AES_DECRYPT devuelve datos binarios
+        # HEX muestra la representación hexadecimal de los datos cifrados almacenados.
         sql = """
             SELECT 
                 id, nombre, apellidoPaterno, apellidoMaterno, rol, correoElectronico, 
                 telefono, fechaNacimiento, direccion, rfc, estatus,
-                CAST(AES_DECRYPT(numeroCuenta, %s) AS CHAR) as numeroCuenta,
-                CAST(AES_DECRYPT(cvv, %s) AS CHAR) as cvv,
-                CAST(AES_DECRYPT(nip, %s) AS CHAR) as nip
+                HEX(numeroCuenta) as numeroCuenta,
+                HEX(cvv) as cvv,
+                HEX(nip) as nip
             FROM usuarios
         """
         
-        cursor.execute(sql, (SECRET_KEY, SECRET_KEY, SECRET_KEY)) # Mandamos la llave de encriptación como parámetro para que MySQL pueda desencriptar los datos correctamente
+        cursor.execute(sql)
         usuarios = cursor.fetchall() # devuelve todos los resultados de la consulta como una lista de diccionarios, donde cada diccionario representa un usuario.
-        
-        # Si el rol del solicitante es "empleado", ocultamos los datos sensibles de los usuarios antes de enviarlos al frontend
-        if rol_solicitante == "empleado":
-            for usuario in usuarios:
-                usuario["numeroCuenta"] = "PROTEGIDO"
-                usuario["cvv"] = "***"
-                usuario["nip"] = "****"
                 
         return {"status": "success", "data": usuarios} # Retorna JSON con los datos de los usuarios al frontend
         
@@ -115,7 +108,7 @@ def obtener_usuarios(rol_solicitante: str):
 
 @app.get("/usuarios/{id_usuario}")
 def obtener_usuario_por_id(id_usuario: int, rol_solicitante: str):
-    if rol_solicitante != "administrador":
+    if rol_solicitante.lower() != "administrador":
         raise HTTPException(status_code=403, detail="Solo los administradores pueden consultar esta informacion")
         
     conexion = obtener_conexion()
@@ -191,7 +184,7 @@ def iniciar_sesion(credenciales: UsuarioLogin):
 
 @app.put("/usuarios/{id_usuario}") # Cuando el frontend haga una petición PUT a la ruta /usuarios/{id_usuario}, se ejecutará la función modificar_usuario()
 def modificar_usuario(id_usuario: int, datos: UsuarioActualizar, rol_solicitante: str):
-    if rol_solicitante != "administrador":
+    if rol_solicitante.lower() != "administrador":
         raise HTTPException(status_code=403, detail="Solo los administradores pueden modificar usuarios")
     
     conexion = obtener_conexion()
@@ -214,7 +207,7 @@ def modificar_usuario(id_usuario: int, datos: UsuarioActualizar, rol_solicitante
                 direccion = %s, 
                 rfc = %s, 
                 estatus = %s,
-                contrasenia = SHA2(%s, 256),
+                contrasenia = COALESCE(SHA2(%s, 256), contrasenia),
                 numeroCuenta = AES_ENCRYPT(%s, %s),
                 cvv = AES_ENCRYPT(%s, %s),
                 nip = AES_ENCRYPT(%s, %s)
@@ -233,8 +226,10 @@ def modificar_usuario(id_usuario: int, datos: UsuarioActualizar, rol_solicitante
         cursor.execute(sql, valores)
         conexion.commit()
         
-        if cursor.rowcount == 0: # Si no se modificó ningún registro, significa que el usuario con ese id no existe
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        if cursor.rowcount == 0:
+            cursor.execute("SELECT 1 FROM usuarios WHERE id = %s", (id_usuario,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Usuario no encontrado")
             
         return {"status": "success", "mensaje": "Los datos del usuario fueron actualizados"}
         

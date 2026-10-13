@@ -3,6 +3,13 @@ document.addEventListener("DOMContentLoaded", () => {
     configurarBotonSalir();
 });
 
+let usuarioEditandoId = null;
+let estatusUsuarioEditando = true;
+
+function obtenerRolSolicitante() {
+    return (localStorage.getItem("rolActivo") || "empleado").toLowerCase();
+}
+
 // Función para el botón de Salir
 function configurarBotonSalir() {
     const btnSalir = document.getElementById("btn-salir");
@@ -40,6 +47,7 @@ async function cargarUsuarios() {
 function renderizarTabla(usuarios) {
     const tbody = document.getElementById('tabla-usuarios-body');
     tbody.innerHTML = '';
+    const esAdministrador = obtenerRolSolicitante() === "administrador";
     
     usuarios.forEach(usuario => {
         const tr = document.createElement('tr');
@@ -58,15 +66,11 @@ function renderizarTabla(usuarios) {
             <td>${usuario.direccion}</td>
             <td>${usuario.fechaNacimiento}</td>
             <td>${usuario.rfc}</td>
-            <td>N/A</td> 
-            <td>N/A</td>
             <td>${usuario.cvv}</td>
             <td>${usuario.numeroCuenta}</td>
             <td>${usuario.nip}</td>
             <td class="celda-acciones">
-                <button class="btn-icono btn-editar" title="Editar" onclick="editarUsuario(${usuario.id})">
-                    ✏️
-                </button>
+                ${esAdministrador ? `<button class="btn-icono btn-editar" title="Editar" onclick="editarUsuario(${usuario.id})">✏️</button>` : ""}
                 <button class="btn-icono btn-eliminar" title="Eliminar" onclick="eliminarUsuario(${usuario.id})">
                     🗑️
                 </button>
@@ -75,13 +79,71 @@ function renderizarTabla(usuarios) {
         tbody.appendChild(tr);
     });
 }
-window.editarUsuario = function(id) {
-    console.log("Abrir modal o ventana para editar al usuario con ID:", id);
+window.editarUsuario = async function(id) {
+    if (obtenerRolSolicitante() !== "administrador") {
+        alert("Solo los administradores pueden editar usuarios.");
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(
+            `http://localhost:8000/usuarios/${id}?rol_solicitante=administrador`
+        );
+        const resultado = await respuesta.json();
+
+        if (!respuesta.ok) {
+            throw new Error(resultado.detail || "No se pudieron cargar los datos del usuario.");
+        }
+
+        const usuario = resultado.data;
+        usuarioEditandoId = id;
+        estatusUsuarioEditando = usuario.estatus;
+        document.getElementById("crear-nombre").value = usuario.nombre;
+        document.getElementById("crear-paterno").value = usuario.apellidoPaterno;
+        document.getElementById("crear-materno").value = usuario.apellidoMaterno;
+        document.getElementById("crear-rol").value = usuario.rol;
+        document.getElementById("crear-correo").value = usuario.correoElectronico;
+        document.getElementById("crear-password").value = "";
+        document.getElementById("crear-password").required = false;
+        document.getElementById("crear-password").placeholder = "Dejar vacío para conservar la actual";
+        document.getElementById("crear-telefono").value = usuario.telefono;
+        document.getElementById("crear-fecha").value = usuario.fechaNacimiento;
+        document.getElementById("crear-direccion").value = usuario.direccion;
+        document.getElementById("crear-rfc").value = usuario.rfc;
+        document.getElementById("crear-cuenta").value = usuario.numeroCuenta;
+        document.getElementById("crear-cvv").value = usuario.cvv;
+        document.getElementById("crear-nip").value = usuario.nip;
+        document.getElementById("titulo-modal-usuario").textContent = "Editar Usuario";
+        document.getElementById("btn-guardar").textContent = "Guardar Cambios";
+        document.getElementById("modal-nuevo-usuario").className = "modal-visible";
+    } catch (error) {
+        console.error("Error al cargar usuario para editar:", error);
+        alert(error.message || "No se pudo conectar con el servidor para cargar el usuario.");
+    }
 };
 
-window.eliminarUsuario = function(id) {
-    if(confirm("¿Estás seguro de que deseas eliminar este usuario del sistema?")) {
-        console.log("Eliminando usuario con ID:", id);
+window.eliminarUsuario = async function(id) {
+    if (!confirm("¿Estás seguro de que deseas eliminar este usuario del sistema?")) {
+        return;
+    }
+
+    try {
+        const rolSolicitante = obtenerRolSolicitante();
+        const respuesta = await fetch(
+            `http://localhost:8000/usuarios/${id}?rol_solicitante=${encodeURIComponent(rolSolicitante)}`,
+            { method: "DELETE" }
+        );
+        const resultado = await respuesta.json();
+
+        if (!respuesta.ok) {
+            throw new Error(resultado.detail || "No se pudo eliminar el usuario.");
+        }
+
+        alert(resultado.mensaje);
+        await cargarUsuarios();
+    } catch (error) {
+        console.error("Error al eliminar usuario:", error);
+        alert(error.message || "No se pudo conectar con el servidor para eliminar el usuario.");
     }
 };
 
@@ -99,12 +161,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Función para abrir el modal
     btnAbrirModal.addEventListener("click", () => {
+        cerrarModal();
         modal.className = "modal-visible";
     });
 
     const cerrarModal = () => {
         modal.className = "modal-oculto";
         formCrear.reset();
+        usuarioEditandoId = null;
+        estatusUsuarioEditando = true;
+        document.getElementById("crear-password").required = true;
+        document.getElementById("crear-password").placeholder = "";
+        document.getElementById("titulo-modal-usuario").textContent = "Crear Nuevo Usuario";
+        document.getElementById("btn-guardar").textContent = "Guardar Usuario";
     };
     btnCerrarModal.addEventListener("click", cerrarModal);
     btnCancelarModal.addEventListener("click", cerrarModal);
@@ -117,8 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     formCrear.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const rolSolicitante = localStorage.getItem("rolActivo") || "empleado";
-        const nuevoUsuario = {
+        const rolSolicitante = obtenerRolSolicitante();
+        const datosUsuario = {
             nombre: document.getElementById("crear-nombre").value,
             apellidoPaterno: document.getElementById("crear-paterno").value,
             apellidoMaterno: document.getElementById("crear-materno").value,
@@ -128,33 +197,41 @@ document.addEventListener("DOMContentLoaded", () => {
             fechaNacimiento: document.getElementById("crear-fecha").value,
             direccion: document.getElementById("crear-direccion").value,
             rfc: document.getElementById("crear-rfc").value,
-            contrasenia: document.getElementById("crear-password").value,
+            contrasenia: document.getElementById("crear-password").value || null,
             numeroCuenta: document.getElementById("crear-cuenta").value,
             cvv: document.getElementById("crear-cvv").value,
             nip: document.getElementById("crear-nip").value
         };
 
+        if (usuarioEditandoId !== null) {
+            datosUsuario.estatus = estatusUsuarioEditando;
+        }
+
         try {
-            const respuesta = await fetch(`http://localhost:8000/usuarios/crear?rol_solicitante=${rolSolicitante}`, {
-                method: "POST",
+            const esEdicion = usuarioEditandoId !== null;
+            const ruta = esEdicion
+                ? `http://localhost:8000/usuarios/${usuarioEditandoId}?rol_solicitante=${rolSolicitante}`
+                : `http://localhost:8000/usuarios/crear?rol_solicitante=${rolSolicitante}`;
+            const respuesta = await fetch(ruta, {
+                method: esEdicion ? "PUT" : "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(nuevoUsuario)
+                body: JSON.stringify(datosUsuario)
             });
 
             const resultado = await respuesta.json();
 
-            if (respuesta.ok) {
-                alert("Éxito: " + resultado.mensaje);
-                cerrarModal();
-                cargarUsuarios();
-            } else {
-                alert("Error: "+resultado.detail);
+            if (!respuesta.ok) {
+                throw new Error(resultado.detail || "No se pudo guardar el usuario.");
             }
+
+            alert(resultado.mensaje);
+            cerrarModal();
+            await cargarUsuarios();
         } catch (error) {
-            console.error("Error al crear usuario:", error);
-            alert("No se pudo conectar con el servidor para crear el usuario.");
+            console.error("Error al guardar usuario:", error);
+            alert(error.message || "No se pudo conectar con el servidor para guardar el usuario.");
         }
     });
 });
