@@ -39,3 +39,4 @@ document.getElementById("btn-login").addEventListener("click", async () => {
         alert("No se pudo conectar con el servidor. Verifique que la API esté encendida.");
     }
 });
+

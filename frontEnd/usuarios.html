@@ -22,7 +22,7 @@
     <main class="area-trabajo">
         <div class="encabezado-tabla">
             <h1>Reporte de Usuarios</h1>
-            <button class="boton-agregar">+ Nuevo Usuario</button>
+            <button class="boton-agregar" id="btn-abrir-modal">+ Nuevo Usuario</button>
         </div>
 
         <div class="envoltorio-tabla">
@@ -53,6 +53,82 @@
             </table>
         </div>
     </main>
+
+    <!-- CREAR USUARIO -->
+    <div id="modal-nuevo-usuario" class="modal-oculto">
+        <div class="modal-contenido">
+            <div class="modal-cabecera">
+                <h2>Crear Nuevo Usuario</h2>
+                <span class="cerrar-modal" id="btn-cerrar-modal">&times;</span>
+            </div>
+            
+            <form id="form-crear-usuario">
+                <div class="grid-formulario">
+                    <div class="campo">
+                        <label>Nombre:</label>
+                        <input type="text" id="crear-nombre" required>
+                    </div>
+                    <div class="campo">
+                        <label>Apellido Paterno:</label>
+                        <input type="text" id="crear-paterno" required>
+                    </div>
+                    <div class="campo">
+                        <label>Apellido Materno:</label>
+                        <input type="text" id="crear-materno" required>
+                    </div>
+                    <div class="campo">
+                        <label>Rol:</label>
+                        <select id="crear-rol" required>
+                            <option value="Empleado">Empleado</option>
+                            <option value="Administrador">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="campo">
+                        <label>Correo Electrónico:</label>
+                        <input type="email" id="crear-correo" required>
+                    </div>
+                    <div class="campo">
+                        <label>Contraseña:</label>
+                        <input type="password" id="crear-password" required>
+                    </div>
+                    <div class="campo">
+                        <label>Teléfono:</label>
+                        <input type="text" id="crear-telefono" required>
+                    </div>
+                    <div class="campo">
+                        <label>Fecha de Nacimiento:</label>
+                        <input type="date" id="crear-fecha" required>
+                    </div>
+                    <div class="campo campo-completo">
+                        <label>Dirección:</label>
+                        <input type="text" id="crear-direccion" required>
+                    </div>
+                    <div class="campo">
+                        <label>RFC:</label>
+                        <input type="text" id="crear-rfc" required>
+                    </div>
+                    <div class="campo">
+                        <label>Número de Cuenta:</label>
+                        <input type="text" id="crear-cuenta" required>
+                    </div>
+                    <div class="campo">
+                        <label>CVV:</label>
+                        <input type="text" id="crear-cvv" required>
+                    </div>
+                    <div class="campo">
+                        <label>NIP:</label>
+                        <input type="password" id="crear-nip" required>
+                    </div>
+                </div>
+
+                <div class="modal-acciones">
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-modal">Cancelar</button>
+                    <button type="submit" class="btn-guardar">Guardar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="tabla_usuarios.js"></script>
 
 </body>

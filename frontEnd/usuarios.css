@@ -151,3 +151,117 @@ body {
     min-width: 130px;
     text-align: left;
 }
+
+/* --- ESTILOS DEL MODAL --- */
+.modal-oculto {
+    display: none;
+}
+
+.modal-visible {
+    display: flex;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Asegura que esté por encima de todo */
+}
+
+.modal-contenido {
+    background-color: #ffffff;
+    width: 700px;
+    max-height: 90vh; /* Si es muy largo, se podrá hacer scroll interno */
+    overflow-y: auto;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #00795f;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.modal-cabecera h2 {
+    color: #00795f;
+    margin: 0;
+}
+
+.cerrar-modal {
+    font-size: 28px;
+    font-weight: bold;
+    color: #888;
+    cursor: pointer;
+}
+
+.cerrar-modal:hover {
+    color: #cc0000;
+}
+
+/* --- GRID DEL FORMULARIO --- */
+.grid-formulario {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas */
+    gap: 15px;
+}
+
+.campo-completo {
+    grid-column: span 2; /* Este campo ocupa las dos columnas */
+}
+
+.campo label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.campo input, .campo select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.campo input:focus, .campo select:focus {
+    border-color: #00795f;
+    outline: none;
+}
+
+/* --- BOTONES DEL MODAL --- */
+.modal-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-cancelar {
+    background-color: #f4f7f6;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-guardar {
+    background-color: #00795f;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-guardar:hover {
+    background-color: #005c48;
+}
