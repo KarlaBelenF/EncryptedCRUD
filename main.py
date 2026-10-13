@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import mysql.connector
@@ -5,6 +6,7 @@ from database import obtener_conexion
 from models import UsuarioCrear, UsuarioActualizar, UsuarioLogin
 import os
 
+load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 app = FastAPI() #Crea un servidor web que escucha peticiones HTTP y devuelve respuestas HTTP.
