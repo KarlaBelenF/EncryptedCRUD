@@ -60,7 +60,10 @@ def crear_usuario(usuario: UsuarioCrear, rol_solicitante: str):
         return {"status": "success", "mensaje": "Usuario creado y datos encriptados correctamente"}
         
     except mysql.connector.Error as err: # Si hay un error al ejecutar la sentencia SQL, devolvemos un error 400 al frontend
-        raise HTTPException(status_code=400, detail=f"Error al guardar: {err}") # error 400 significa que la petición del cliente es incorrecta, en este caso porque los datos que envió no cumplen con las reglas de la base de datos
+        if err.errno == 1062: # 1062 es el código de error de MySQL para "Duplicate entry", es decir, que ya existe un registro con ese correo electrónico
+            raise HTTPException(status_code=400, detail="El correo electrónico ya está registrado")
+        else:
+            raise HTTPException(status_code=500, detail=f"Error al guardar: {err}") # Si es otro error, devolvemos un error 500 al frontend con el mensaje de error que nos dio MySQL
     finally:
         if conexion.is_connected():
             cursor.close()
@@ -105,6 +108,41 @@ def obtener_usuarios(rol_solicitante: str):
             cursor.close()
             conexion.close()
 
+@app.get("/usuarios/{id_usuario}")
+def obtener_usuario_por_id(id_usuario: int, rol_solicitante: str):
+    if rol_solicitante != "administrador":
+        raise HTTPException(status_code=403, detail="Solo los administradores pueden consultar esta informacion")
+        
+    conexion = obtener_conexion()
+    if not conexion: 
+        raise HTTPException(status_code=500, detail="Error de BD")
+    
+    try:
+        cursor = conexion.cursor(dictionary=True)
+        sql = """
+            SELECT id, nombre, apellidoPaterno, apellidoMaterno, rol, correoElectronico, 
+            telefono, fechaNacimiento, direccion, rfc, estatus,
+            CAST(AES_DECRYPT(numeroCuenta, 'MesaVerdeSecretKey') AS CHAR) as numeroCuenta,
+            CAST(AES_DECRYPT(cvv, 'MesaVerdeSecretKey') AS CHAR) as cvv,
+            CAST(AES_DECRYPT(nip, 'MesaVerdeSecretKey') AS CHAR) as nip
+            FROM usuarios
+            WHERE id = %s
+        """
+        cursor.execute(sql, (id_usuario,))
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+            
+        return {"status": "success", "data": usuario}
+        
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Error al consultar: {err}")
+    finally:
+        if conexion.is_connected():
+            cursor.close()
+            conexion.close()
+
 @app.post("/login") # Cuando el frontend haga una petición POST a la ruta /login, se ejecutará la función iniciar_sesion()
 def iniciar_sesion(credenciales: UsuarioLogin):
     conexion = obtener_conexion()
@@ -116,7 +154,7 @@ def iniciar_sesion(credenciales: UsuarioLogin):
         
         # Comparamos el correo y la contraseña encriptada con SHA2
         sql = """
-            SELECT id, nombre, rol 
+            SELECT id, nombre, rol, estatus
             FROM usuarios 
             WHERE correoElectronico = %s AND contrasenia = SHA2(%s, 256)
         """
@@ -127,15 +165,16 @@ def iniciar_sesion(credenciales: UsuarioLogin):
         # Devuelve un diccionario con los datos del usuario si las credenciales son correctas
         usuario = cursor.fetchone() 
         
-        if usuario:
+        if usuario and usuario["estatus"]:
             # Si encontró un usuario con esas credenciales, devolvemos un mensaje de éxito y los datos del usuario al frontend
             return {
                 "status": "success", 
                 "mensaje": "Bienvenido a Mesa Verde", 
                 "datos": usuario 
             }
-        else:
-            # Si no encontró nada, lanzamos un Error 401 (Unauthorized)
+        elif usuario: # Si encontró un usuario con esas credenciales pero está inactivo, devolvemos un error 403 al frontend
+            raise HTTPException(status_code=403, detail="Usuario inactivo. Contacte al administrador.")
+        else: # Si no encontró un usuario con esas credenciales, devolvemos un error 401 al frontend
             raise HTTPException(status_code=401, detail="Correo o contraseña incorrectos")
             
     except mysql.connector.Error as err:
@@ -241,4 +280,5 @@ def probar_conexion():
     # Si falla, mandamos un error 500 al frontend
     raise HTTPException(status_code=500, detail="Error conectando a la base de datos")
 
-#uvicorn main:app --reload
+# uvicorn main:app --reload
+# http://localhost:8000/docs
