@@ -1,8 +1,133 @@
-.inicio_sesion {
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #043927;
+}
+
+.contenedor-dividido {
+    display: flex;
+    height: 100vh;
+}
+
+.mitad-login {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     background-color: #00795f;
-    width: 400px;
-    height: 300px;
-    text-align: center;
-    margin: 0 auto;
-    margin-top: 50px;
+    color: #ffffff;
+}
+
+.encabezado-login {
+    display: flex;
+    align-items: center;
+    margin-bottom: 50px;
+    width: 380px;
+}
+
+.logo-pequeno {
+    width: 60px;
+    height: auto;
+    margin-right: 15px;
+}
+
+.nombre-banco {
+    font-weight: bold;
+    font-size: 32px;
+    color: #ffffff;
+}
+
+/* --- ESTILOS DEL FORMULARIO --- */
+.inicio_sesion {
+    width: 380px;
+    text-align: left;
+}
+
+.inicio_sesion h1 {
+    font-size: 36px;
+    margin: 0 0 5px 0;
+}
+
+.inicio_sesion h2 {
+    color: #a4c3b6;
+    font-size: 18px;
+    font-weight: normal;
+    margin-bottom: 30px;
+}
+
+/* --- CAMPOS DE TEXTO --- */
+.inicio_sesion input[type="text"],
+.inicio_sesion input[type="password"] {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: transparent;
+    border: 2px solid #2b5c4d;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    box-sizing: border-box; 
+    outline: none;
+}
+
+.inicio_sesion input[type="text"]::placeholder,
+.inicio_sesion input[type="password"]::placeholder {
+    color: #ffffff;
+}
+
+.inicio_sesion input[type="text"]:focus,
+.inicio_sesion input[type="password"]:focus {
+    border-color: #dfc888;
+}
+
+/* --- BOTÓN DE INICIAR SESIÓN --- */
+.btn-ingresar {
+    width: 100%;
+    padding: 15px;
+    background-color: #ffffff;
+    color: #00795f;
+    font-weight: bold;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-ingresar:hover {
+    background-color: #0b5c40;
+}
+
+/* --- ENLACES INFERIORES --- */
+.enlaces-inferiores {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+    font-size: 14px;
+}
+
+.enlaces-inferiores a {
+    color: #a4c3b6;
+    text-decoration: none;
+}
+
+.enlaces-inferiores a:hover {
+    color: #dfc888;
+    text-decoration: underline;
+}
+
+/* --- MITAD DERECHA (IMAGEN) --- */
+.mitad-imagen {
+    width: 50%;
+    overflow: hidden;
+}
+
+.mitad-imagen img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
 }
