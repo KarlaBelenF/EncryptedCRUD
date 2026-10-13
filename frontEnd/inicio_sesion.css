@@ -18,13 +18,15 @@ body {
     align-items: center;
     background-color: #00795f;
     color: #ffffff;
+    position: relative;
 }
 
 .encabezado-login {
     display: flex;
     align-items: center;
-    margin-bottom: 50px;
-    width: 380px;
+    position: absolute; 
+    top: 50px;         
+    left: 50px;  
 }
 
 .logo-pequeno {
@@ -39,7 +41,7 @@ body {
     color: #ffffff;
 }
 
-/* --- ESTILOS DEL FORMULARIO --- */
+
 .inicio_sesion {
     width: 380px;
     text-align: left;
@@ -63,10 +65,10 @@ body {
     width: 100%;
     padding: 15px;
     margin-bottom: 20px;
-    background-color: transparent;
-    border: 2px solid #2b5c4d;
+    background-color: white;
+    border: 2px solid white;
     border-radius: 8px;
-    color: white;
+    color: black;
     font-size: 16px;
     box-sizing: border-box; 
     outline: none;
@@ -74,7 +76,7 @@ body {
 
 .inicio_sesion input[type="text"]::placeholder,
 .inicio_sesion input[type="password"]::placeholder {
-    color: #ffffff;
+    color: #00795f;
 }
 
 .inicio_sesion input[type="text"]:focus,
@@ -119,7 +121,6 @@ body {
     text-decoration: underline;
 }
 
-/* --- MITAD DERECHA (IMAGEN) --- */
 .mitad-imagen {
     width: 50%;
     overflow: hidden;
