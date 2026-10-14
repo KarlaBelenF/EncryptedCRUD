@@ -155,8 +155,7 @@ window.eliminarUsuario = async function(id) {
 };
 
 
-// ==========================================
-// CREACIÓN DE USUARIO
+// creacion de usuario
 
 document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("modal-nuevo-usuario");
@@ -228,12 +227,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const resultado = await respuesta.json();
             if (!respuesta.ok) {
-                const detalle = resultado.detail;
-                const mensajeError = typeof detalle === "string"
-                    ? detalle
-                    : detalle
-                        ? JSON.stringify(detalle)
-                        : "No se pudo guardar el usuario.";
+                let mensajeError = "No se pudo guardar el usuario.";
+                
+                if (Array.isArray(resultado.detail)) {
+                    const campo = resultado.detail[0].loc[1]; 
+                    mensajeError = `Datos inválidos. Por favor revisa el campo: ${campo}`;
+                } else if (typeof resultado.detail === "string") {
+                    mensajeError = resultado.detail;
+                }
+                
                 throw new Error(mensajeError);
             }
 
